@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Favicon</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #0a0e1a;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            border: 2px solid #6366f1;
+            border-radius: 12px;
+            margin: 20px;
+        }
+        button {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <h1>Favicon Generator</h1>
+    <canvas id="canvas" width="512" height="512"></canvas>
+    <div>
+        <button onclick="download('favicon.png', 512)">Download 512x512 PNG</button>
+        <button onclick="download('favicon-32.png', 32)">Download 32x32 PNG</button>
+    </div>
+    
+    <script>
+        function drawFavicon(size) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+            
+            // Create gradient background
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#6366f1');
+            gradient.addColorStop(0.5, '#8b5cf6');
+            gradient.addColorStop(1, '#6366f1');
+            
+            // Draw rounded rectangle background
+            ctx.fillStyle = gradient;
+            const radius = size * 0.1875; // 12/64 ratio
+            ctx.beginPath();
+            ctx.moveTo(radius, 0);
+            ctx.lineTo(size - radius, 0);
+            ctx.quadraticCurveTo(size, 0, size, radius);
+            ctx.lineTo(size, size - radius);
+            ctx.quadraticCurveTo(size, size, size - radius, size);
+            ctx.lineTo(radius, size);
+            ctx.quadraticCurveTo(0, size, 0, size - radius);
+            ctx.lineTo(0, radius);
+            ctx.quadraticCurveTo(0, 0, radius, 0);
+            ctx.fill();
+            
+            // Draw subtle circle
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = size * 0.015625; // 1/64 ratio
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, size * 0.46875, 0, Math.PI * 2); // 30/64 ratio
+            ctx.stroke();
+            
+            // Draw "S" letter
+            ctx.fillStyle = 'white';
+            ctx.font = `bold ${size * 0.75}px Arial, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('S', size/2, size/2 + size * 0.04);
+            
+            return canvas;
+        }
+        
+        // Draw preview
+        const previewCanvas = document.getElementById('canvas');
+        const previewCtx = previewCanvas.getContext('2d');
+        const preview = drawFavicon(512);
+        previewCtx.drawImage(preview, 0, 0);
+        
+        function download(filename, size) {
+            const canvas = drawFavicon(size);
+            canvas.toBlob(function(blob) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+        }
+    </script>
+</body>
+</html>
