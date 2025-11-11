@@ -4,7 +4,9 @@ from pydantic import BaseModel
 import numpy as np
 import skfuzzy as fuzz
 from skfuzzy import control as ctrl
+
 app = FastAPI()
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -12,17 +14,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 class StressInput(BaseModel):
     sleep: float  
     workload: float  
     screentime: float  
-    extracurricular: float  
+    extracurricular: float
+
 class StressOutput(BaseModel):
     stress_percentage: float
     stress_label: str
     membership_degrees: dict
     input_values: dict
     fuzzy_details: dict
+
 def create_fuzzy_system():
     sleep = ctrl.Antecedent(np.arange(0, 13, 0.1), 'sleep')
     workload = ctrl.Antecedent(np.arange(0, 11, 0.1), 'workload')
