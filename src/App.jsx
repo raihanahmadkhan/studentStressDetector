@@ -6,6 +6,7 @@ import MembershipChart from './components/MembershipChart'
 import StressHistory from './components/StressHistory'
 import Recommendations from './components/Recommendations'
 import FuzzyRulesVisualization from './components/FuzzyRulesVisualization'
+import { calculateStressLocal } from './services/stressCalculator'
 import './App.css'
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [isLocalMode, setIsLocalMode] = useState(false)
   const [history, setHistory] = useState(() => {
     const saved = localStorage.getItem('stressHistory')
     return saved ? JSON.parse(saved) : []
@@ -29,14 +31,42 @@ function App() {
     setLoading(true)
     setError(null)
     
+    const useLocal = import.meta.env.VITE_USE_LOCAL === 'true'
+    
+    // Try API first unless local mode is forced
+    if (!useLocal) {
+      try {
+        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+        const response = await axios.post(`${apiUrl}/api/calculate-stress`, inputs)
+        setResult(response.data)
+        setIsLocalMode(false)
+        
+        const newEntry = {
+          timestamp: new Date().toISOString(),
+          stress: response.data.stress_percentage,
+          inputs: { ...inputs }
+        }
+        
+        const updatedHistory = [...history, newEntry].slice(-20)
+        setHistory(updatedHistory)
+        localStorage.setItem('stressHistory', JSON.stringify(updatedHistory))
+        setLoading(false)
+        return
+      } catch (err) {
+        console.log('API unavailable, falling back to local calculation')
+        // Fall through to local calculation
+      }
+    }
+    
+    // Use local calculation (either forced or as fallback)
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-      const response = await axios.post(`${apiUrl}/api/calculate-stress`, inputs)
-      setResult(response.data)
+      const localResult = await calculateStressLocal(inputs)
+      setResult(localResult)
+      setIsLocalMode(true)
       
       const newEntry = {
         timestamp: new Date().toISOString(),
-        stress: response.data.stress_percentage,
+        stress: localResult.stress_percentage,
         inputs: { ...inputs }
       }
       
@@ -44,7 +74,7 @@ function App() {
       setHistory(updatedHistory)
       localStorage.setItem('stressHistory', JSON.stringify(updatedHistory))
     } catch (err) {
-      setError('Failed to connect to backend. Make sure the FastAPI server is running on port 8000.')
+      setError('Failed to calculate stress. Please try again.')
       console.error(err)
     } finally {
       setLoading(false)
@@ -111,7 +141,10 @@ function App() {
               <Brain className="logo-icon" size={40} />
               <div>
                 <h1>Student Stress Detector</h1>
-                <p className="subtitle">Powered by Mamdani Fuzzy Inference System</p>
+                <p className="subtitle">
+                  Powered by Mamdani Fuzzy Inference System
+                  {isLocalMode && <span style={{ marginLeft: '0.5rem', color: '#3b82f6' }}>• Local Mode</span>}
+                </p>
               </div>
             </div>
           </div>

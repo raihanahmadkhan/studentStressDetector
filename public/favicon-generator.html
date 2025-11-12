@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Favicon Generator</title>
+</head>
+<body>
+    <canvas id="canvas" width="512" height="512"></canvas>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Create gradient background
+        const gradient = ctx.createLinearGradient(0, 0, 512, 512);
+        gradient.addColorStop(0, '#6366f1');
+        gradient.addColorStop(0.5, '#8b5cf6');
+        gradient.addColorStop(1, '#6366f1');
+        
+        // Draw rounded rectangle background
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.roundRect(0, 0, 512, 512, 96);
+        ctx.fill();
+        
+        // Draw subtle circle
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+        ctx.lineWidth = 8;
+        ctx.beginPath();
+        ctx.arc(256, 256, 240, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Draw "S" letter
+        ctx.fillStyle = 'white';
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 8;
+        ctx.lineJoin = 'round';
+        ctx.font = 'bold 380px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('S', 256, 276);
+        
+        // Download as PNG
+        canvas.toBlob(function(blob) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'favicon.png';
+            a.click();
+        });
+    </script>
+</body>
+</html>
