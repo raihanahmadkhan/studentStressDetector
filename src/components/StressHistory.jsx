@@ -28,9 +28,9 @@ ChartJS.register(
 function StressHistory({ history }) {
   if (!history || history.length === 0) {
     return (
-      <div style={{ 
-        padding: '3rem', 
-        textAlign: 'center', 
+      <div style={{
+        padding: '3rem',
+        textAlign: 'center',
         color: '#94a3b8',
         display: 'flex',
         flexDirection: 'column',
@@ -43,7 +43,7 @@ function StressHistory({ history }) {
     )
   }
 
-  // Get color based on stress level
+
   const getStressColor = (value) => {
     if (value < 25) return '#10b981'
     if (value < 45) return '#3b82f6'
@@ -52,7 +52,7 @@ function StressHistory({ history }) {
     return '#ef4444'
   }
 
-  // Create gradient for line
+
   const createGradient = (ctx, chartArea) => {
     const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top)
     gradient.addColorStop(0, 'rgba(16, 185, 129, 0.1)')
@@ -69,7 +69,7 @@ function StressHistory({ history }) {
       const now = new Date()
       const diffMs = now - date
       const diffMins = Math.floor(diffMs / 60000)
-      
+
       if (diffMins < 1) return 'Just now'
       if (diffMins < 60) return `${diffMins}m ago`
       if (diffMins < 1440) return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
@@ -81,9 +81,9 @@ function StressHistory({ history }) {
         data: history.map(entry => entry.stress),
         borderColor: (context) => {
           const chart = context.chart
-          const {ctx, chartArea} = chart
+          const { ctx, chartArea } = chart
           if (!chartArea) return '#6366f1'
-          
+
           const gradient = ctx.createLinearGradient(0, 0, chartArea.width, 0)
           history.forEach((entry, idx) => {
             const position = idx / (history.length - 1)
@@ -93,7 +93,7 @@ function StressHistory({ history }) {
         },
         backgroundColor: (context) => {
           const chart = context.chart
-          const {ctx, chartArea} = chart
+          const { ctx, chartArea } = chart
           if (!chartArea) return 'rgba(99, 102, 241, 0.1)'
           return createGradient(ctx, chartArea)
         },
@@ -153,10 +153,10 @@ function StressHistory({ history }) {
           weight: '600'
         },
         callbacks: {
-          title: function(context) {
+          title: function (context) {
             return context[0].label
           },
-          label: function(context) {
+          label: function (context) {
             const value = context.parsed.y
             let level = ''
             if (value < 25) level = 'Very Low'
@@ -164,10 +164,10 @@ function StressHistory({ history }) {
             else if (value < 65) level = 'Moderate'
             else if (value < 85) level = 'High'
             else level = 'Very High'
-            
+
             return `${value.toFixed(1)}% - ${level} Stress`
           },
-          afterLabel: function(context) {
+          afterLabel: function (context) {
             const entry = history[context.dataIndex]
             if (entry.inputs) {
               return [
@@ -254,7 +254,7 @@ function StressHistory({ history }) {
             size: 12,
             weight: '500'
           },
-          callback: function(value) {
+          callback: function (value) {
             return value + '%'
           },
           stepSize: 20
@@ -289,39 +289,39 @@ function StressHistory({ history }) {
     }
   }
 
-  // Calculate statistics
+
   const avgStress = history.reduce((sum, entry) => sum + entry.stress, 0) / history.length
   const maxStress = Math.max(...history.map(entry => entry.stress))
   const minStress = Math.min(...history.map(entry => entry.stress))
-  
-  // Calculate trend
+
+
   const getTrend = () => {
     if (history.length < 2) return { direction: 'stable', percentage: 0 }
-    
+
     const recent = history.slice(-5)
     const older = history.slice(0, Math.min(5, history.length - 5))
-    
+
     if (older.length === 0) return { direction: 'stable', percentage: 0 }
-    
+
     const recentAvg = recent.reduce((sum, e) => sum + e.stress, 0) / recent.length
     const olderAvg = older.reduce((sum, e) => sum + e.stress, 0) / older.length
-    
+
     const diff = recentAvg - olderAvg
     const percentChange = ((diff / olderAvg) * 100)
-    
+
     if (Math.abs(diff) < 3) return { direction: 'stable', percentage: 0 }
     if (diff > 0) return { direction: 'up', percentage: percentChange }
     return { direction: 'down', percentage: Math.abs(percentChange) }
   }
-  
+
   const trend = getTrend()
-  
+
   const getTrendIcon = () => {
     if (trend.direction === 'up') return <TrendingUp size={14} />
     if (trend.direction === 'down') return <TrendingDown size={14} />
     return <Minus size={14} />
   }
-  
+
   const getTrendColor = () => {
     if (trend.direction === 'up') return '#ef4444'
     if (trend.direction === 'down') return '#10b981'
@@ -330,11 +330,11 @@ function StressHistory({ history }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-      {/* Statistics */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(4, 1fr)', 
-        gap: '1rem' 
+
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: '1rem'
       }}>
         <div className="info-item">
           <span className="info-label">
@@ -357,7 +357,7 @@ function StressHistory({ history }) {
           </span>
           <span className="info-value" style={{ color: '#6ee7b7' }}>{minStress.toFixed(1)}%</span>
         </div>
-        <div className="info-item" style={{ 
+        <div className="info-item" style={{
           borderColor: getTrendColor() + '40',
           background: getTrendColor() + '10'
         }}>
@@ -366,15 +366,15 @@ function StressHistory({ history }) {
             <span style={{ marginLeft: '0.5rem' }}>Trend</span>
           </span>
           <span className="info-value" style={{ color: getTrendColor() }}>
-            {trend.direction === 'stable' ? 'Stable' : 
-             trend.direction === 'up' ? `↑ ${trend.percentage.toFixed(0)}%` : 
-             `↓ ${trend.percentage.toFixed(0)}%`}
+            {trend.direction === 'stable' ? 'Stable' :
+              trend.direction === 'up' ? `↑ ${trend.percentage.toFixed(0)}%` :
+                `↓ ${trend.percentage.toFixed(0)}%`}
           </span>
         </div>
       </div>
 
-      {/* Chart */}
-      <div style={{ 
+
+      <div style={{
         background: 'rgba(15, 23, 42, 0.2)',
         borderRadius: '16px',
         padding: '1.5rem',
@@ -385,8 +385,8 @@ function StressHistory({ history }) {
         </div>
       </div>
 
-      {/* Entry count and info */}
-      <div style={{ 
+
+      <div style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
@@ -395,8 +395,8 @@ function StressHistory({ history }) {
         flexWrap: 'wrap',
         gap: '1rem'
       }}>
-        <div style={{ 
-          color: '#64748b', 
+        <div style={{
+          color: '#64748b',
           fontSize: '0.875rem',
           fontWeight: 500
         }}>

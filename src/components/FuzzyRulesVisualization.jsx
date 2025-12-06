@@ -30,42 +30,42 @@ function FuzzyRulesVisualization({ inputs, membershipDegrees }) {
 
   const getActiveRules = () => {
     if (!membershipDegrees) return []
-    
+
     const activeRules = []
     const sleep = membershipDegrees.sleep
     const workload = membershipDegrees.workload
     const screentime = membershipDegrees.screentime
     const extra = membershipDegrees.extracurricular
 
-    // Determine dominant memberships (> 0.3 threshold)
+
     const threshold = 0.3
-    
+
     fuzzyRules.forEach(rule => {
       let isActive = false
       const condition = rule.condition.toLowerCase()
-      
-      // Check if rule conditions match current memberships
+
+
       if (condition.includes('good sleep') && sleep.good > threshold) isActive = true
       if (condition.includes('poor sleep') && sleep.poor > threshold) isActive = true
       if (condition.includes('moderate sleep') && sleep.moderate > threshold) isActive = true
-      
+
       if (condition.includes('high workload') && workload.high > threshold) isActive = true
       if (condition.includes('medium workload') && workload.medium > threshold) isActive = true
       if (condition.includes('low workload') && workload.low > threshold) isActive = true
-      
+
       if (condition.includes('high screentime') && screentime.high > threshold) isActive = true
       if (condition.includes('moderate screentime') && screentime.moderate > threshold) isActive = true
       if (condition.includes('low screentime') && screentime.low > threshold) isActive = true
-      
+
       if (condition.includes('excessive activities') && extra.excessive > threshold) isActive = true
       if (condition.includes('balanced activities') && extra.balanced > threshold) isActive = true
       if (condition.includes('low activities') && extra.low > threshold) isActive = true
-      
+
       if (isActive) {
         activeRules.push(rule)
       }
     })
-    
+
     return activeRules
   }
 
@@ -89,10 +89,10 @@ function FuzzyRulesVisualization({ inputs, membershipDegrees }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-      {/* Header with toggle */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
+
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
         alignItems: 'center',
         flexWrap: 'wrap',
         gap: '1rem'
@@ -100,11 +100,11 @@ function FuzzyRulesVisualization({ inputs, membershipDegrees }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <Zap size={20} color="#6366f1" />
           <span style={{ color: '#e2e8f0', fontWeight: 600, fontSize: '1rem' }}>
-            {showAllRules ? 'All Fuzzy Rules' : 'Active Rules'} 
-            <span style={{ 
-              marginLeft: '0.5rem', 
-              color: '#64748b', 
-              fontSize: '0.875rem' 
+            {showAllRules ? 'All Fuzzy Rules' : 'Active Rules'}
+            <span style={{
+              marginLeft: '0.5rem',
+              color: '#64748b',
+              fontSize: '0.875rem'
             }}>
               ({displayRules.length})
             </span>
@@ -141,8 +141,8 @@ function FuzzyRulesVisualization({ inputs, membershipDegrees }) {
         </button>
       </div>
 
-      {/* Rules list */}
-      <div style={{ 
+
+      <div style={{
         display: 'grid',
         gap: '0.875rem',
         maxHeight: showAllRules ? '500px' : 'auto',
@@ -150,9 +150,9 @@ function FuzzyRulesVisualization({ inputs, membershipDegrees }) {
         paddingRight: showAllRules ? '0.5rem' : '0'
       }}>
         {displayRules.length === 0 ? (
-          <div style={{ 
-            padding: '2rem', 
-            textAlign: 'center', 
+          <div style={{
+            padding: '2rem',
+            textAlign: 'center',
             color: '#64748b',
             background: 'rgba(15, 23, 42, 0.3)',
             borderRadius: '12px',
@@ -164,7 +164,7 @@ function FuzzyRulesVisualization({ inputs, membershipDegrees }) {
           displayRules.map((rule, idx) => {
             const colors = getPriorityColor(rule.priority)
             const isActive = activeRules.includes(rule)
-            
+
             return (
               <div
                 key={idx}
@@ -178,8 +178,8 @@ function FuzzyRulesVisualization({ inputs, membershipDegrees }) {
                   opacity: isActive || showAllRules ? 1 : 0.5
                 }}
               >
-                <div style={{ 
-                  display: 'flex', 
+                <div style={{
+                  display: 'flex',
                   alignItems: 'flex-start',
                   gap: '0.75rem',
                   flexWrap: 'wrap'
@@ -193,15 +193,15 @@ function FuzzyRulesVisualization({ inputs, membershipDegrees }) {
                     #{idx + 1}
                   </span>
                   <div style={{ flex: 1, minWidth: '200px' }}>
-                    <div style={{ 
-                      color: '#cbd5e1', 
+                    <div style={{
+                      color: '#cbd5e1',
                       fontSize: '0.875rem',
                       marginBottom: '0.5rem',
                       fontWeight: 500
                     }}>
                       IF {rule.condition}
                     </div>
-                    <div style={{ 
+                    <div style={{
                       color: colors.text,
                       fontSize: '0.875rem',
                       fontWeight: 700,

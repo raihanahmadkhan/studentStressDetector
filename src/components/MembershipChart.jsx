@@ -19,11 +19,11 @@ ChartJS.register(
 )
 
 function MembershipChart({ membershipDegrees }) {
-  // Prepare data for each input variable
+
   const prepareChartData = (variableName, degrees) => {
     const labels = Object.keys(degrees)
     const values = Object.values(degrees)
-    
+
     const colors = {
       sleep: '#8b5cf6',
       workload: '#3b82f6',
@@ -90,7 +90,7 @@ function MembershipChart({ membershipDegrees }) {
         padding: 12,
         displayColors: false,
         callbacks: {
-          label: function(context) {
+          label: function (context) {
             return 'Degree: ' + context.parsed.y.toFixed(3)
           }
         }

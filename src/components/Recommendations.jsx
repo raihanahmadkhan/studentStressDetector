@@ -3,8 +3,8 @@ import { Lightbulb, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react'
 function Recommendations({ stressLevel, inputs }) {
   const getRecommendations = () => {
     const recommendations = []
-    
-    // Sleep recommendations
+
+
     if (inputs.sleep < 6) {
       recommendations.push({
         type: 'critical',
@@ -28,7 +28,7 @@ function Recommendations({ stressLevel, inputs }) {
       })
     }
 
-    // Workload recommendations
+
     if (inputs.workload > 7) {
       recommendations.push({
         type: 'critical',
@@ -52,7 +52,7 @@ function Recommendations({ stressLevel, inputs }) {
       })
     }
 
-    // Screen time recommendations
+
     if (inputs.screentime > 10) {
       recommendations.push({
         type: 'critical',
@@ -76,7 +76,7 @@ function Recommendations({ stressLevel, inputs }) {
       })
     }
 
-    // Extracurricular recommendations
+
     if (inputs.extracurricular > 7) {
       recommendations.push({
         type: 'warning',
@@ -100,7 +100,7 @@ function Recommendations({ stressLevel, inputs }) {
       })
     }
 
-    // Overall stress recommendations
+
     if (stressLevel > 75) {
       recommendations.push({
         type: 'critical',
@@ -192,9 +192,9 @@ function Recommendations({ stressLevel, inputs }) {
                 {getIcon(rec.type)}
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
                   gap: '0.75rem',
                   marginBottom: '0.5rem'
                 }}>

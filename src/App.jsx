@@ -16,7 +16,7 @@ function App() {
     screentime: 6,
     extracurricular: 5
   })
-  
+
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -30,46 +30,45 @@ function App() {
   const calculateStress = async () => {
     setLoading(true)
     setError(null)
-    
+
     const useLocal = import.meta.env.VITE_USE_LOCAL === 'true'
-    
-    // Try API first unless local mode is forced
+
+
     if (!useLocal) {
       try {
         const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
         const response = await axios.post(`${apiUrl}/api/calculate-stress`, inputs)
         setResult(response.data)
         setIsLocalMode(false)
-        
+
         const newEntry = {
           timestamp: new Date().toISOString(),
           stress: response.data.stress_percentage,
           inputs: { ...inputs }
         }
-        
+
         const updatedHistory = [...history, newEntry].slice(-20)
         setHistory(updatedHistory)
         localStorage.setItem('stressHistory', JSON.stringify(updatedHistory))
         setLoading(false)
         return
       } catch (err) {
-        console.log('API unavailable, falling back to local calculation')
-        // Fall through to local calculation
+
       }
     }
-    
-    // Use local calculation (either forced or as fallback)
+
+
     try {
       const localResult = await calculateStressLocal(inputs)
       setResult(localResult)
       setIsLocalMode(true)
-      
+
       const newEntry = {
         timestamp: new Date().toISOString(),
         stress: localResult.stress_percentage,
         inputs: { ...inputs }
       }
-      
+
       const updatedHistory = [...history, newEntry].slice(-20)
       setHistory(updatedHistory)
       localStorage.setItem('stressHistory', JSON.stringify(updatedHistory))
@@ -92,7 +91,7 @@ function App() {
 
   const exportReport = () => {
     if (!result) return
-    
+
     const report = {
       timestamp: new Date().toISOString(),
       stress_analysis: {
@@ -103,7 +102,7 @@ function App() {
       membership_degrees: result.membership_degrees,
       history: history
     }
-    
+
     const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -133,7 +132,7 @@ function App() {
   return (
     <div className="app">
       <div className="background-gradient"></div>
-      
+
       <div className="container">
         <header className="header">
           <div className="header-content">
@@ -156,7 +155,7 @@ function App() {
               <Activity size={24} />
               Input Parameters
             </h2>
-            
+
             <div className="controls">
               <div className="control-group">
                 <div className="control-header">
@@ -270,7 +269,7 @@ function App() {
 
             {result && !loading && (
               <div className="results">
-                <div 
+                <div
                   className="stress-display"
                   style={{ background: getStressGradient(result.stress_percentage) }}
                 >
@@ -363,9 +362,9 @@ function App() {
                     <Zap size={24} />
                     Fuzzy Inference Rules
                   </h2>
-                  <FuzzyRulesVisualization 
-                    inputs={inputs} 
-                    membershipDegrees={result.membership_degrees} 
+                  <FuzzyRulesVisualization
+                    inputs={inputs}
+                    membershipDegrees={result.membership_degrees}
                   />
                 </>
               )}
