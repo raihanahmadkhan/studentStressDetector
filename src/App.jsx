@@ -141,7 +141,7 @@ function App() {
               <div>
                 <h1>Student Stress Detector</h1>
                 <p className="subtitle">
-                  Powered by Mamdani Fuzzy Inference System
+                  Built by Raihan Ahmad
                   {isLocalMode && <span style={{ marginLeft: '0.5rem', color: '#3b82f6' }}>• Local Mode</span>}
                 </p>
               </div>
