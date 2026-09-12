@@ -63,7 +63,7 @@ it('keeps a conflicting edit draft and never silently overwrites', async () => {
   fireEvent.click(screen.getByRole('button', { name: 'Save revision' }))
   await screen.findByRole('alert')
   expect(screen.getByLabelText(/Sleep duration/)).toHaveValue('9')
-  expect(api.edit).toHaveBeenCalledWith('c1', expect.objectContaining({ sleep_hours: 9, reported_strain: null }), 1, expect.any(String), 'csrf', expect.any(AbortSignal))
+  expect(api.edit).toHaveBeenCalledWith('c1', expect.objectContaining({ sleep_hours: 9, reported_strain: 5 }), 1, expect.any(String), 'csrf', expect.any(AbortSignal))
   expect(api.save).not.toHaveBeenCalled()
 })
 
@@ -175,4 +175,13 @@ it('retains a failed name edit and allows cancellation', async () => {
   expect(screen.getByLabelText('Display name')).toHaveValue('Sam')
   fireEvent.click(screen.getByRole('button', { name: 'Cancel name changes' }))
   expect(screen.getByLabelText('Display name')).toHaveValue('Alex')
+})
+
+it('offers timezone choices and no AI or prediction controls', async () => {
+  mount()
+  fireEvent.click(screen.getByRole('button', { name: 'Account & settings' }))
+  await screen.findByLabelText('Display name')
+  expect(screen.getByRole('combobox', { name: 'Timezone' })).toHaveValue('Asia/Kolkata')
+  expect(screen.queryByText('Optional AI reflections')).not.toBeInTheDocument()
+  expect(screen.queryByText('Predictive ML')).not.toBeInTheDocument()
 })

@@ -20,8 +20,7 @@ describe('explicit slider observations', () => {
     expect(slider).toHaveAttribute('max', '12')
     expect(slider).toHaveAttribute('step', '0.25')
     expect(slider).toHaveAccessibleDescription('Hours asleep')
-    expect(screen.getByText('Choose a value')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Use 6h' }))
+    expect(screen.getByText('6h')).toBeInTheDocument()
     expect(slider).toHaveAttribute('aria-valuetext', '6h')
     fireEvent.change(slider, { target: { value: '8.25' } })
     expect(screen.getByText('8h 15m')).toBeInTheDocument()
@@ -30,8 +29,8 @@ describe('explicit slider observations', () => {
   it('requires six routine values and an explicit strain choice; slider changes never save', () => {
     render(<CheckInForm user={user} onExpired={vi.fn()} />)
     expect(screen.getAllByRole('slider')).toHaveLength(7)
-    fireEvent.click(screen.getByRole('button', { name: 'Save check-in' }))
-    expect(screen.getByRole('alert')).toHaveTextContent('Choose a value for every routine slider')
+
+    expect(screen.queryByRole('button', { name: /Use |Prefer to skip/ })).not.toBeInTheDocument()
     fireEvent.change(screen.getByRole('slider', { name: 'Deadline pressure' }), { target: { value: '9' } })
     fireEvent.change(screen.getByRole('slider', { name: 'Recovery / relaxation' }), { target: { value: '2' } })
     expect(api.save).not.toHaveBeenCalled()

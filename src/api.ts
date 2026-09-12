@@ -1,5 +1,4 @@
 import axios from 'axios'
-import type { AIStatus, Reflection, ReflectionSource } from './types'
 import type { AuthConfig, CheckIn, CheckInPage, CurrentUser, Submission, Inputs, Patterns, ScenarioResult } from './types'
 
 const http = axios.create({ baseURL: '/api', timeout: 12000, withCredentials: true })
@@ -38,13 +37,6 @@ function checkInContract(value: CheckIn): CheckIn {
 export const api = {
   async account(displayName: string, csrf: string, signal?: AbortSignal) {
     return (await http.patch<CurrentUser>('/account', { display_name: displayName }, { headers: { 'X-CSRF-Token': csrf }, signal })).data
-  },
-  async aiStatus(signal?: AbortSignal) { return (await http.get<AIStatus>('/ai/status', { signal })).data },
-  async aiConsent(enabled: boolean, csrf: string, signal?: AbortSignal) { return (await http.patch<{ consent: boolean }>('/ai/consent', { enabled }, { headers: { 'X-CSRF-Token': csrf }, signal })).data },
-  async reflect(source: ReflectionSource, key: string, csrf: string, signal?: AbortSignal) {
-    const value = (await http.post<Reflection>('/ai/reflections', source, { timeout: 20000, headers: { 'Idempotency-Key': key, 'X-CSRF-Token': csrf }, signal })).data
-    if (!value?.output || !Array.isArray(value.evidence) || !Array.isArray(value.output.highlights) || !['grounded', 'fallback'].includes(value.status) || value.history_version !== source.expected_history_version) throw new ApiFailure('Unexpected reflection. Reload its source before continuing.')
-    return value
   },
   async list(start: string, end: string, cursor?: string, version?: number, signal?: AbortSignal) {
     const result = (await http.get<CheckInPage>('/check-ins', { params: { start_date: start, end_date: end, cursor, expected_history_version: version }, signal })).data

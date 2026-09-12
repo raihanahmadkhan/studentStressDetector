@@ -7,6 +7,8 @@ export const fields = [
   ['recovery', 'Recovery / relaxation', 'How much opportunity for rest and relaxation did you have? 0 = none; 10 = ample restorative downtime.', 10, 1, '/ 10'],
 ] as const
 
+export const defaultValues: Record<string, string> = { sleep_hours: '6', academic_load: '5', deadline_pressure: '5', screen_hours: '8', extracurricular_load: '5', recovery: '5', reported_strain: '5' }
+
 export function localDate(timezone: string) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: timezone, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
 }

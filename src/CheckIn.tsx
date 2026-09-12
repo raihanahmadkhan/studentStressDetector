@@ -4,9 +4,8 @@ import { ArrowRight, Check, ShieldCheck } from 'lucide-react'
 import { api, failure } from './api'
 import type { CheckIn, CurrentUser, Submission } from './types'
 import { FuzzyChart } from './Charts'
-import { fields, localDate } from './checkInFields'
+import { fields, localDate, defaultValues } from './checkInFields'
 import { NumericSlider } from './NumericSlider'
-import { ReflectionPanel } from './Reflections'
 
 export function Result({ value, hypothetical = false }: { value: CheckIn; hypothetical?: boolean }) {
   const headingId = useId()
@@ -38,7 +37,7 @@ export function Result({ value, hypothetical = false }: { value: CheckIn; hypoth
 
 export function CheckInForm({ user, onExpired, initial, onSaved, onDirty }: { user: CurrentUser; onExpired: () => void; initial?: CheckIn; onSaved?: (value: CheckIn) => void; onDirty?: (dirty: boolean) => void }) {
   const [date, setDate] = useState(() => initial?.observation_date ?? localDate(user.timezone))
-  const [values, setValues] = useState<Record<string, string>>(() => initial ? Object.fromEntries(Object.entries(initial.inputs).map(([k, v]) => [k, v === null ? (k === 'reported_strain' ? 'skip' : '') : String(v)])) : { ...Object.fromEntries(fields.map(([k]) => [k, ''])), reported_strain: '' })
+  const [values, setValues] = useState<Record<string, string>>(() => initial ? { ...defaultValues, ...Object.fromEntries(Object.entries(initial.inputs).map(([k, v]) => [k, v === null ? defaultValues[k] : String(v)])) } : { ...defaultValues })
   const [result, setResult] = useState<CheckIn | null>(null)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState('')
@@ -66,13 +65,13 @@ export function CheckInForm({ user, onExpired, initial, onSaved, onDirty }: { us
   async function submit(event: FormEvent) {
     event.preventDefault()
     if (busy.current) return
-    if (fields.some(([k, , , max, step]) => !values[k] || !Number.isFinite(Number(values[k])) || Number(values[k]) < 0 || Number(values[k]) > max || Number(values[k]) % step !== 0) || !values.reported_strain) { setError('Choose a value for every routine slider and report your strain or explicitly skip it.'); return }
+    if (fields.some(([k, , , max, step]) => !values[k] || !Number.isFinite(Number(values[k])) || Number(values[k]) < 0 || Number(values[k]) > max || Number(values[k]) % step !== 0) || !values.reported_strain) { setError('Check that every slider is within its supported range.'); return }
     const payload: Submission = {
       observation_date: date, timezone: user.timezone,
       sleep_hours: Number(values.sleep_hours), academic_load: Number(values.academic_load),
       deadline_pressure: Number(values.deadline_pressure), recovery: Number(values.recovery),
       screen_hours: Number(values.screen_hours), extracurricular_load: Number(values.extracurricular_load),
-      reported_strain: values.reported_strain === 'skip' ? null : Number(values.reported_strain),
+      reported_strain: Number(values.reported_strain),
     }
     const fingerprint = JSON.stringify(payload)
     if (attempt.current?.fingerprint !== fingerprint) attempt.current = { fingerprint, key: crypto.randomUUID() }
@@ -122,7 +121,7 @@ export function CheckInForm({ user, onExpired, initial, onSaved, onDirty }: { us
       <section className="panel" aria-labelledby="checkin-heading">
         <div className="eyebrow">Your daily stress assessment</div>
         <h2 id="checkin-heading">{initial ? `Edit ${initial.observation_date} · revision ${initial.revision}` : 'Your daily stress check-in'}</h2>
-        <p>Describe your workload, pressures, and recovery to estimate stress for this day. Then record how strained you felt. Only Save check-in saves your answers and result.</p>
+        <p>Describe your workload, pressures, and recovery to estimate stress for this day. Then record how strained you felt. Sliders start at the displayed defaults. Adjust them to match your day; Save check-in saves the values shown.</p>
         <form onSubmit={submit} aria-busy={pending}>
           <fieldset disabled={pending}>
             <legend className="sr-only">Daily stress check-in</legend>
@@ -130,8 +129,7 @@ export function CheckInForm({ user, onExpired, initial, onSaved, onDirty }: { us
             <input id="observation-date" type="date" required disabled={!!initial} max={localDate(user.timezone)} value={date} onChange={event => { setDate(event.target.value); setDirty(true); setInfo('') }} />
             <small>Calendar dates use {initial?.timezone ?? user.timezone}. Earlier dates are marked retrospective.</small>
             <div className="form-grid">{fields.map(([name, label, help, max, step, unit]) => <NumericSlider key={name} name={name} label={label} help={help} max={max} step={step} unit={unit} value={values[name] ?? ''} onChange={v => changed(name, v)} />)}</div>
-            <div className="strain-field"><NumericSlider name="reported_strain" label="How strained did you feel on this day?" help="Your experience matters. This report stays separate from the stress estimate and never changes its calculation. You can skip it." max={10} step={1} unit="/ 10" value={values.reported_strain} onChange={v => changed('reported_strain', v)} />
-              <button type="button" aria-pressed={values.reported_strain === 'skip'} onClick={() => changed('reported_strain', 'skip')}>Prefer to skip</button>
+            <div className="strain-field"><NumericSlider name="reported_strain" label="How strained did you feel on this day?" help="Your experience matters. This report stays separate from the stress estimate and never changes its calculation." max={10} step={1} unit="/ 10" value={values.reported_strain} onChange={v => changed('reported_strain', v)} />
             </div>
             <div className="actions"><button className="primary" type="submit">{pending ? 'Working…' : initial ? 'Save revision' : 'Save check-in'} <ArrowRight size={17} aria-hidden="true" /></button>{!initial && <button type="button" onClick={loadSaved}>Load saved check-in</button>}</div>
           </fieldset>
@@ -142,6 +140,6 @@ export function CheckInForm({ user, onExpired, initial, onSaved, onDirty }: { us
       </section>
       <aside className="side-note"><ShieldCheck size={25} aria-hidden="true" /><h2>What shapes your stress estimate?</h2><p>Six routine inputs form three components. The result shows how much each contributes to the estimated stress score.</p><ol><li>Academic pressure: workload and deadlines.</li><li>Recovery deficit: sleep and relaxation.</li><li>Contextual pressure: screen time and other commitments.</li></ol><p className="muted">Your reported strain is shown alongside the estimate. A rule-based score cannot capture everything you feel.</p></aside>
     </div>
-    {result && <><Result value={result} /><ReflectionPanel key={`${result.id}:${result.revision}:${result.history_version}`} source={{ kind: 'checkin', checkin_id: result.id, expected_history_version: result.history_version }} user={user} onExpired={onExpired} /></>}
+    {result && <><Result value={result} /></>}
   </>
 }

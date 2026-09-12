@@ -25,7 +25,6 @@ function result(payload: Submission): CheckIn {
 async function fill() {
   await screen.findByRole('heading', { name: 'Your daily stress check-in' })
   fireEvent.change(screen.getByLabelText(/Sleep duration/), { target: { value: '7' } })
-  for (const button of screen.getAllByRole('button', { name: 'Use 5 / 10' })) fireEvent.click(button)
   fireEvent.change(screen.getByLabelText(/Screen time/), { target: { value: '6' } })
   fireEvent.change(screen.getByLabelText(/Other commitments/), { target: { value: '5' } })
   fireEvent.change(screen.getByLabelText(/How strained/), { target: { value: '6' } })
@@ -172,13 +171,12 @@ describe('intentional observations', () => {
     expect(api.logout).toHaveBeenCalledTimes(2)
   })
 
-  it('requires an explicit skip and does not invent strain', async () => {
+  it('submits displayed defaults without touching sliders', async () => {
     render(<App />)
-    await fill()
-    fireEvent.click(screen.getByRole('button', { name: 'Prefer to skip' }))
+    await screen.findByRole('heading', { name: 'Your daily stress check-in' })
     fireEvent.click(screen.getByRole('button', { name: 'Save check-in' }))
-    await screen.findByText('Skipped')
-    expect(vi.mocked(api.save).mock.calls[0][0].reported_strain).toBeNull()
+    await screen.findByText('50.0 / 100')
+    expect(vi.mocked(api.save).mock.calls[0][0]).toEqual(expect.objectContaining({ sleep_hours: 6, screen_hours: 8, academic_load: 5, deadline_pressure: 5, recovery: 5, extracurricular_load: 5, reported_strain: 5 }))
   })
 
   it('loads a saved record without creating history', async () => {
