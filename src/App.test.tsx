@@ -131,10 +131,45 @@ describe('intentional observations', () => {
     await fill()
     fireEvent.click(screen.getByRole('button', { name: 'Save check-in' }))
     fireEvent.click(screen.getByRole('button', { name: 'Sign out' }))
-    await screen.findByRole('heading', { name: 'Your check-ins belong to you' })
+    await screen.findByRole('heading', { name: /Your days are full/ })
     await act(async () => resolve(result(vi.mocked(api.save).mock.calls[0][0])))
     expect(screen.queryByText('50.0 / 100')).not.toBeInTheDocument()
     expect(screen.queryByLabelText(/Sleep duration/)).not.toBeInTheDocument()
+  })
+
+  it('treats a revoked session as signed out when the logout response is lost', async () => {
+    vi.mocked(api.logout).mockRejectedValueOnce(new ApiFailure('Request timed out.'))
+    vi.mocked(api.me)
+      .mockResolvedValueOnce(user)
+      .mockRejectedValueOnce(new ApiFailure('Sign in to continue.', 401))
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Sign out' }))
+    await screen.findByRole('heading', { name: /Your days are full/ })
+    expect(api.logout).toHaveBeenCalledTimes(1)
+    expect(screen.queryByText(/could not be confirmed/i)).not.toBeInTheDocument()
+  })
+
+  it('refreshes a stale CSRF token and retries logout once', async () => {
+    const refreshed = { ...user, csrf_token: 'refreshed-csrf' }
+    vi.mocked(api.logout)
+      .mockRejectedValueOnce(new ApiFailure('Refresh the page and try again.', 403, 'CSRF_INVALID'))
+      .mockResolvedValueOnce(undefined)
+    vi.mocked(api.me).mockResolvedValueOnce(user).mockResolvedValueOnce(refreshed)
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Sign out' }))
+    await screen.findByRole('heading', { name: /Your days are full/ })
+    expect(api.logout).toHaveBeenNthCalledWith(1, 'csrf')
+    expect(api.logout).toHaveBeenNthCalledWith(2, 'refreshed-csrf')
+  })
+
+  it('keeps the session visible when logout and verification both remain available but fail', async () => {
+    vi.mocked(api.logout).mockRejectedValue(new ApiFailure('Unavailable', 503))
+    vi.mocked(api.me).mockResolvedValue(user)
+    render(<App />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Sign out' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Sign-out could not be confirmed. Please retry.')
+    expect(screen.getByRole('button', { name: 'Sign out' })).toBeInTheDocument()
+    expect(api.logout).toHaveBeenCalledTimes(2)
   })
 
   it('requires an explicit skip and does not invent strain', async () => {

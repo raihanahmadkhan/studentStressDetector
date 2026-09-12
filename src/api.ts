@@ -82,7 +82,7 @@ export const api = {
     return (await http.post<CurrentUser>('/auth/dev-login')).data
   },
   async logout(csrf: string) {
-    await http.post('/auth/logout', undefined, { headers: { 'X-CSRF-Token': csrf } })
+    await http.post('/auth/logout', undefined, { timeout: 20000, headers: { 'X-CSRF-Token': csrf } })
   },
   async save(payload: Submission, key: string, csrf: string, signal?: AbortSignal) {
     const response = await http.post<CheckIn>('/check-ins', payload, {
