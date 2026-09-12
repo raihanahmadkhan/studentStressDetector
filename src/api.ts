@@ -36,6 +36,9 @@ function checkInContract(value: CheckIn): CheckIn {
 }
 
 export const api = {
+  async account(displayName: string, csrf: string, signal?: AbortSignal) {
+    return (await http.patch<CurrentUser>('/account', { display_name: displayName }, { headers: { 'X-CSRF-Token': csrf }, signal })).data
+  },
   async aiStatus(signal?: AbortSignal) { return (await http.get<AIStatus>('/ai/status', { signal })).data },
   async aiConsent(enabled: boolean, csrf: string, signal?: AbortSignal) { return (await http.patch<{ consent: boolean }>('/ai/consent', { enabled }, { headers: { 'X-CSRF-Token': csrf }, signal })).data },
   async reflect(source: ReflectionSource, key: string, csrf: string, signal?: AbortSignal) {

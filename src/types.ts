@@ -1,4 +1,6 @@
 export interface CurrentUser {
+  display_name?: string | null
+  google_email?: string | null
   id: string
   timezone: string
   history_version: number

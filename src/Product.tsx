@@ -14,18 +14,18 @@ type Screen = 'Today' | 'Timeline' | 'Patterns' | 'Explore' | 'Settings'
 type SessionProps = { user: CurrentUser; onExpired: () => void }
 const titles: Record<keyof Inputs, string> = { sleep_hours: 'Sleep duration', academic_load: 'Academic workload', screen_hours: 'Screen time', extracurricular_load: 'Other commitments', deadline_pressure: 'Deadline pressure', recovery: 'Recovery / relaxation', reported_strain: 'Self-reported strain' }
 const icons = [CalendarDays, History, LineChart, FlaskConical, SettingsIcon]
-const screenLabels: Record<Screen, string> = { Today: 'Check-in', Timeline: 'Stress history', Patterns: 'Stress trends', Explore: 'What-if', Settings: 'Settings' }
+const screenLabels: Record<Screen, string> = { Today: 'Check-in', Timeline: 'Stress history', Patterns: 'Stress trends', Explore: 'What-if', Settings: 'Account & settings' }
 function offset(date: string, days: number) { const d = new Date(`${date}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10) }
 function Status({ pending, error }: { pending: boolean; error: string }) { return <>{pending && <p className="notice" role="status">Working…</p>}{error && <p className="error" role="alert">{error}</p>}</> }
 
-export function Product({ user, onExpired, onUser }: SessionProps & { onUser: (user: CurrentUser | null) => void }) {
+export function Product({ user, onExpired, onUser, onLogout, authPending = false }: SessionProps & { onUser: (user: CurrentUser | null) => void; onLogout?: () => void; authPending?: boolean }) {
   const [screen, setScreen] = useState<Screen>('Today')
   const [reference, setReference] = useState<CheckIn | undefined>()
   const dirty = useRef(false)
   const onDirty = useCallback((value: boolean) => { dirty.current = value }, [])
   function navigate(next: Screen) {
     if (next === screen) return
-    if (dirty.current && !window.confirm('Leave this check-in and discard unsaved changes?')) return
+    if (dirty.current && !window.confirm('Leave this page and discard unsaved changes?')) return
     dirty.current = false
     setScreen(next)
   }
@@ -38,7 +38,7 @@ export function Product({ user, onExpired, onUser }: SessionProps & { onUser: (u
     {screen === 'Timeline' && <Timeline user={user} onExpired={onExpired} onDirty={onDirty} onExplore={value => { setReference(value); navigate('Explore') }} />}
     {screen === 'Patterns' && <PatternsScreen user={user} onExpired={onExpired} />}
     {screen === 'Explore' && <Explore user={user} onExpired={onExpired} reference={reference} />}
-    {screen === 'Settings' && <SettingsScreen user={user} onExpired={onExpired} onUser={onUser} />}
+    {screen === 'Settings' && <SettingsScreen user={user} onExpired={onExpired} onUser={onUser} onDirty={onDirty} onLogout={onLogout} authPending={authPending} />}
   </>
 }
 
@@ -125,7 +125,30 @@ function Explore({ user, onExpired, reference }: SessionProps & { reference?: Ch
 
 function download(blob: Blob) { const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = 'student-stress-data.json'; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000) }
 
-function SettingsScreen({ user, onExpired, onUser }: SessionProps & { onUser: (user: CurrentUser | null) => void }) {
+function ProfileForm({ user, onUser, onExpired, onDirty }: SessionProps & { onUser: (user: CurrentUser) => void; onDirty: (dirty: boolean) => void }) {
+  const [name, setName] = useState(user.display_name ?? '')
+  const [savedName, setSavedName] = useState(user.display_name ?? '')
+  const [notice, setNotice] = useState('')
+  const { run, pending, error } = useRequest(onExpired)
+  const dirty = name !== savedName
+  useEffect(() => {
+    onDirty(dirty)
+    const warn = (event: BeforeUnloadEvent) => { if (dirty) { event.preventDefault(); event.returnValue = '' } }
+    window.addEventListener('beforeunload', warn)
+    return () => { onDirty(false); window.removeEventListener('beforeunload', warn) }
+  }, [dirty, onDirty])
+  return <form className="account-profile" onSubmit={event => {
+    event.preventDefault(); setNotice('')
+    void run(signal => api.account(name.trim(), user.csrf_token, signal), updated => {
+      setName(updated.display_name ?? ''); setSavedName(updated.display_name ?? ''); onUser(updated); setNotice('Display name saved.')
+    })
+  }} aria-busy={pending}>
+    <fieldset disabled={pending}><label htmlFor="display-name">Display name</label><input id="display-name" autoComplete="nickname" maxLength={80} required value={name} onChange={e => { setName(e.target.value); setNotice('') }} aria-describedby="display-name-help" /><p id="display-name-help" className="small muted">How we address you here. This does not change your name on Google.</p><div className="actions"><button className="primary" disabled={!dirty || !name.trim()}>{pending ? 'Saving name…' : 'Save display name'}</button>{dirty && <button type="button" onClick={() => { setName(savedName); setNotice('') }}>Cancel name changes</button>}</div></fieldset>
+    <Status pending={pending} error={error} />{notice && <p role="status" className="notice">{notice}</p>}
+  </form>
+}
+
+function SettingsScreen({ user, onExpired, onUser, onDirty, onLogout, authPending }: SessionProps & { onUser: (user: CurrentUser | null) => void; onDirty: (dirty: boolean) => void; onLogout?: () => void; authPending: boolean }) {
   const [timezone, setTimezone] = useState(user.timezone)
   const [snapshot, setSnapshot] = useState<CurrentUser | null>(null)
   const [confirmation, setConfirmation] = useState('')
@@ -147,7 +170,11 @@ function SettingsScreen({ user, onExpired, onUser }: SessionProps & { onUser: (u
       void run(signal => api.clearHistory(snapshot.history_version, attempt.current!.key, user.csrf_token, signal), result => { const updated = { ...user, history_version: result.history_version }; setSnapshot(updated); onUser(updated); setAction(null); setConfirmation(''); setNotice('All observations and revisions have been deleted.') })
     }
   }
-  return <section className="panel"><div className="eyebrow">Your stress records, your control</div><h2>Settings & data</h2>
+  return <section className="panel"><div className="eyebrow">Your account</div><h2>Account & settings</h2>
+    <div className="account-summary"><span className="account-avatar" aria-hidden="true">{(user.display_name?.trim() || 'S').slice(0, 1).toLocaleUpperCase()}</span><div><h3>{user.display_name || 'Your profile'}</h3><p className="small">Your profile and private stress records, in one place.</p></div>{onLogout && <button disabled={authPending} onClick={onLogout}>{authPending ? 'Signing out…' : 'Sign out of this account'}</button>}</div>
+    {snapshot ? <><div className="account-email"><h3>Google email</h3><p>{snapshot.google_email || 'No Google email available for this session.'}</p><p className="small muted">{snapshot.google_email ? 'Provided by Google. To use another Google account, sign out and sign in with that account.' : 'If you previously signed in with Google, sign out and sign in again to refresh your profile. Local development accounts have no Google email.'}</p></div><ProfileForm user={snapshot} onUser={updated => { setSnapshot(updated); onUser(updated) }} onExpired={onExpired} onDirty={onDirty} /></> : <p role="status">{pending ? 'Loading your profile…' : 'Your profile could not be loaded.'}</p>}
+    {!snapshot && !pending && <button onClick={() => void run(signal => api.me(signal), setSnapshot)}>Retry profile</button>}
+    <hr /><h3>Check-in preferences</h3>
     <form onSubmit={e => { e.preventDefault(); setNotice(''); void run(signal => api.preferences(timezone, user.csrf_token, signal), value => { onUser({ ...user, ...value }); setNotice('Timezone saved. Existing observation dates and timezones remain unchanged.') }) }}><label className="compact-field">Timezone (IANA name)<input required maxLength={64} value={timezone} onChange={e => setTimezone(e.target.value)} placeholder="Asia/Kolkata" disabled={pending} /></label><p className="small">Controls the default date for future check-ins. Examples: Asia/Kolkata, Europe/London, America/New_York.</p><button disabled={pending}>Save timezone</button></form>
     <AIControls user={user} onUser={onUser} onExpired={onExpired} /><hr /><h3>Export your data</h3><p>Download JSON with every saved revision, its original assessment, dates, timezones, and model specifications. Session credentials are excluded.</p><button disabled={pending} onClick={() => { setNotice(''); void run(signal => api.exportData(signal), blob => { download(blob); setNotice('Your export is ready in your browser downloads.') }) }}>Download data export</button>
     <div className="danger-zone"><h3>Delete data</h3><p>Deletion is permanent. Export first if you want a copy. History deletion keeps your account; account deletion also revokes every session.</p><div className="actions"><button disabled={pending} onClick={() => prepare('history')}>Delete all history</button><button className="danger" disabled={pending} onClick={() => prepare('account')}>Delete account</button></div>

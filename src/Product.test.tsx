@@ -118,7 +118,7 @@ it('calculates a scenario explicitly without any history mutation and keeps its 
 
 it('requires typed confirmation with a freshly loaded version for history deletion', async () => {
   vi.mocked(api.me).mockResolvedValue({ ...user, history_version: 8 })
-  mount(); fireEvent.click(screen.getByRole('button', { name: 'Settings' }))
+  mount(); fireEvent.click(screen.getByRole('button', { name: 'Account & settings' }))
   await waitFor(() => expect(api.me).toHaveBeenCalledTimes(1))
   await waitFor(() => expect(screen.getByRole('button', { name: 'Delete all history' })).not.toBeDisabled())
   fireEvent.click(screen.getByRole('button', { name: 'Delete all history' }))
@@ -145,4 +145,34 @@ it('expires the session instead of showing another account a late response', asy
   mount(); fireEvent.click(screen.getByRole('button', { name: 'Stress history' }))
   await waitFor(() => expect(onExpired).toHaveBeenCalledTimes(1))
   expect(screen.queryByRole('button', { name: 'Open 2026-09-01' })).not.toBeInTheDocument()
+})
+
+it('edits the display name explicitly and keeps Google email read-only', async () => {
+  const profile = { ...user, display_name: 'Alex', google_email: 'alex@example.com' }
+  vi.mocked(api.me).mockResolvedValue(profile)
+  vi.mocked(api.account).mockResolvedValue({ ...profile, display_name: 'Sam' })
+  mount()
+  fireEvent.click(screen.getByRole('button', { name: 'Account & settings' }))
+  const input = await screen.findByLabelText('Display name')
+  expect(input).toHaveValue('Alex')
+  expect(screen.getByText('alex@example.com')).toBeInTheDocument()
+  fireEvent.change(input, { target: { value: 'Sam' } })
+  expect(api.account).not.toHaveBeenCalled()
+  fireEvent.click(screen.getByRole('button', { name: 'Save display name' }))
+  await screen.findByText('Display name saved.')
+  expect(api.account).toHaveBeenCalledWith('Sam', 'csrf', expect.any(AbortSignal))
+  expect(onUser).toHaveBeenCalledWith(expect.objectContaining({ display_name: 'Sam', google_email: 'alex@example.com' }))
+})
+
+it('retains a failed name edit and allows cancellation', async () => {
+  vi.mocked(api.me).mockResolvedValue({ ...user, display_name: 'Alex' })
+  vi.mocked(api.account).mockRejectedValue(new ApiFailure('Profile unavailable', 503))
+  mount()
+  fireEvent.click(screen.getByRole('button', { name: 'Account & settings' }))
+  fireEvent.change(await screen.findByLabelText('Display name'), { target: { value: 'Sam' } })
+  fireEvent.click(screen.getByRole('button', { name: 'Save display name' }))
+  await screen.findByText('Profile unavailable')
+  expect(screen.getByLabelText('Display name')).toHaveValue('Sam')
+  fireEvent.click(screen.getByRole('button', { name: 'Cancel name changes' }))
+  expect(screen.getByLabelText('Display name')).toHaveValue('Alex')
 })

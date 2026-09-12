@@ -21,10 +21,10 @@ describe('explicit slider observations', () => {
     expect(slider).toHaveAttribute('step', '0.25')
     expect(slider).toHaveAccessibleDescription('Hours asleep')
     expect(screen.getByText('Choose a value')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Use 6.0 hours' }))
-    expect(slider).toHaveAttribute('aria-valuetext', '6.0 hours')
+    fireEvent.click(screen.getByRole('button', { name: 'Use 6h' }))
+    expect(slider).toHaveAttribute('aria-valuetext', '6h')
     fireEvent.change(slider, { target: { value: '8.25' } })
-    expect(screen.getByText('8.25 hours')).toBeInTheDocument()
+    expect(screen.getByText('8h 15m')).toBeInTheDocument()
     expect(slider).toHaveValue('8.25')
   })
   it('requires six routine values and an explicit strain choice; slider changes never save', () => {

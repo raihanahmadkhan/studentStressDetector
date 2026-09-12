@@ -98,3 +98,10 @@ footer { border-top: 1px solid #dce3da; color: #687a6a; font-size: .78rem; margi
 .contributor-grid p { font-size: .83rem; margin: .75rem 0 0; }
 @media (max-width: 700px) { .contributor-grid { grid-template-columns: 1fr; } }
 @media (max-width: 430px) { .scores { grid-template-columns: 1fr; } }
+.account-summary { display: flex; align-items: center; gap: 18px; padding: 22px; margin: 20px 0; background: #f0f5ed; border-radius: 12px; flex-wrap: wrap; }
+.account-summary > div { flex: 1; min-width: 180px; overflow-wrap: anywhere; }
+.account-summary h3, .account-summary p { margin: 0 0 4px; }
+.account-avatar { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; background: #184b40; color: white; font-size: 1.5rem; flex: none; }
+.account-profile { max-width: 520px; margin: 24px 0; }
+.account-email { overflow-wrap: anywhere; }
+.account-greeting { color: #407461; font-weight: 600; overflow-wrap: anywhere; }
