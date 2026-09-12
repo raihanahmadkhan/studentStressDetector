@@ -15,8 +15,8 @@ export function ReflectionPanel({ source, user, onExpired }: { source: Reflectio
   const [result, setResult] = useState<Reflection | null>(null)
   const key = useRef(crypto.randomUUID())
   const { run, pending, error } = useRequest(onExpired)
-  return <section className="reflection-panel" aria-label="Grounded reflection"><h3>A moment to reflect</h3>
-    <p>Review trusted facts and a few reflection questions. Optional AI selects the highlights; the backend supplies every factual statement and number.</p>
+  return <section className="reflection-panel" aria-label="Grounded reflection"><h3>Make sense of your stress</h3>
+    <p>Review the recorded pressures, stress calculation, and your reported experience. Reflections use verified facts from this check-in or period; optional AI does not calculate your stress score.</p>
     <button disabled={pending} onClick={() => void run(signal => api.reflect(source, key.current, user.csrf_token, signal), setResult)}>{pending ? 'Preparing reflection…' : 'Prepare grounded reflection'}</button>
     {!user.llm_consent && <p className="small muted">External AI is off. You can review its data-sharing controls in Settings. Verified templates work without it.</p>}
     {pending && <p role="status">Preparing a reflection from this source snapshot…</p>}{error && <p className="error" role="alert">{error}</p>}

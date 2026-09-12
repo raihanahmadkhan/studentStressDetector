@@ -23,7 +23,7 @@ function result(payload: Submission): CheckIn {
 }
 
 async function fill() {
-  await screen.findByRole('heading', { name: 'Your daily check-in' })
+  await screen.findByRole('heading', { name: 'Your daily stress check-in' })
   fireEvent.change(screen.getByLabelText(/Sleep duration/), { target: { value: '7' } })
   for (const button of screen.getAllByRole('button', { name: 'Use 5 / 10' })) fireEvent.click(button)
   fireEvent.change(screen.getByLabelText(/Screen time/), { target: { value: '6' } })
@@ -131,7 +131,7 @@ describe('intentional observations', () => {
     await fill()
     fireEvent.click(screen.getByRole('button', { name: 'Save check-in' }))
     fireEvent.click(screen.getByRole('button', { name: 'Sign out' }))
-    await screen.findByRole('heading', { name: /Your days are full/ })
+    await screen.findByRole('heading', { name: /It adds up/ })
     await act(async () => resolve(result(vi.mocked(api.save).mock.calls[0][0])))
     expect(screen.queryByText('50.0 / 100')).not.toBeInTheDocument()
     expect(screen.queryByLabelText(/Sleep duration/)).not.toBeInTheDocument()
@@ -144,7 +144,7 @@ describe('intentional observations', () => {
       .mockRejectedValueOnce(new ApiFailure('Sign in to continue.', 401))
     render(<App />)
     fireEvent.click(await screen.findByRole('button', { name: 'Sign out' }))
-    await screen.findByRole('heading', { name: /Your days are full/ })
+    await screen.findByRole('heading', { name: /It adds up/ })
     expect(api.logout).toHaveBeenCalledTimes(1)
     expect(screen.queryByText(/could not be confirmed/i)).not.toBeInTheDocument()
   })
@@ -157,7 +157,7 @@ describe('intentional observations', () => {
     vi.mocked(api.me).mockResolvedValueOnce(user).mockResolvedValueOnce(refreshed)
     render(<App />)
     fireEvent.click(await screen.findByRole('button', { name: 'Sign out' }))
-    await screen.findByRole('heading', { name: /Your days are full/ })
+    await screen.findByRole('heading', { name: /It adds up/ })
     expect(api.logout).toHaveBeenNthCalledWith(1, 'csrf')
     expect(api.logout).toHaveBeenNthCalledWith(2, 'refreshed-csrf')
   })

@@ -29,15 +29,15 @@ beforeEach(() => {
 })
 function mount() { return render(<Product user={user} onUser={onUser} onExpired={onExpired} />) }
 async function openObservation() {
-  fireEvent.click(screen.getByRole('button', { name: 'Timeline' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Stress history' }))
   fireEvent.click(await screen.findByRole('button', { name: 'Open 2026-09-01' }))
-  await screen.findByRole('button', { name: 'Edit observation' })
+  await screen.findByRole('button', { name: 'Edit check-in' })
 }
 
 it('loads history as a read and needs confirmation before deleting', async () => {
   mount(); await openObservation()
   expect(api.save).not.toHaveBeenCalled()
-  fireEvent.click(screen.getByRole('button', { name: 'Delete observation' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Delete check-in' }))
   expect(api.remove).not.toHaveBeenCalled()
   fireEvent.click(screen.getByRole('button', { name: 'Confirm permanent deletion' }))
   await waitFor(() => expect(api.remove).toHaveBeenCalledWith('c1', 1, expect.any(String), 'csrf', expect.any(AbortSignal)))
@@ -47,7 +47,7 @@ it('loads history as a read and needs confirmation before deleting', async () =>
 it('retries uncertain deletion with its original key', async () => {
   vi.mocked(api.remove).mockRejectedValueOnce(new ApiFailure('Unconfirmed delete', 503))
   mount(); await openObservation()
-  fireEvent.click(screen.getByRole('button', { name: 'Delete observation' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Delete check-in' }))
   fireEvent.click(screen.getByRole('button', { name: 'Confirm permanent deletion' }))
   await screen.findByText('Unconfirmed delete')
   const key = vi.mocked(api.remove).mock.calls[0][2]
@@ -58,7 +58,7 @@ it('retries uncertain deletion with its original key', async () => {
 it('keeps a conflicting edit draft and never silently overwrites', async () => {
   vi.mocked(api.edit).mockRejectedValue(new ApiFailure('Newer revision exists. Reload before saving.', 409, 'revision_conflict'))
   mount(); await openObservation()
-  fireEvent.click(screen.getByRole('button', { name: 'Edit observation' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Edit check-in' }))
   fireEvent.change(screen.getByLabelText(/Sleep duration/), { target: { value: '9' } })
   fireEvent.click(screen.getByRole('button', { name: 'Save revision' }))
   await screen.findByRole('alert')
@@ -78,7 +78,7 @@ it('preserves distinct revision views without restoration writes', async () => {
 it('checks history version when loading another page', async () => {
   vi.mocked(api.list).mockResolvedValueOnce({ items: [saved], next_cursor: '2026-09-01', history_version: 7 }).mockRejectedValueOnce(new ApiFailure('History changed. Refresh.', 409))
   mount()
-  fireEvent.click(screen.getByRole('button', { name: 'Timeline' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Stress history' }))
   fireEvent.click(await screen.findByRole('button', { name: 'Load more dates' }))
   await screen.findByText('History changed. Refresh.')
   expect(vi.mocked(api.list).mock.calls[1][3]).toBe(7)
@@ -86,7 +86,7 @@ it('checks history version when loading another page', async () => {
 })
 
 it('shows missing pattern data explicitly with a table equivalent', async () => {
-  mount(); fireEvent.click(screen.getByRole('button', { name: 'Patterns' }))
+  mount(); fireEvent.click(screen.getByRole('button', { name: 'Stress trends' }))
   await screen.findByText('Not enough data')
   expect(screen.getByText('Missing', { exact: true })).toBeInTheDocument()
   expect(screen.getByText('Not enough reports')).toBeInTheDocument()
@@ -96,7 +96,7 @@ it('shows missing pattern data explicitly with a table equivalent', async () => 
 it('discards a superseded patterns response', async () => {
   let resolve!: (value: Patterns) => void
   vi.mocked(api.patterns).mockImplementationOnce(() => new Promise(done => { resolve = done })).mockResolvedValueOnce(emptyPatterns)
-  mount(); fireEvent.click(screen.getByRole('button', { name: 'Patterns' }))
+  mount(); fireEvent.click(screen.getByRole('button', { name: 'Stress trends' }))
   await waitFor(() => expect(api.patterns).toHaveBeenCalledTimes(1))
   fireEvent.change(screen.getByLabelText('Period ending'), { target: { value: '2026-09-07' } })
   await screen.findByText('Not enough data')
@@ -109,7 +109,7 @@ it('calculates a scenario explicitly without any history mutation and keeps its 
   fireEvent.click(screen.getByRole('button', { name: 'Explore from this day' }))
   expect(api.scenario).not.toHaveBeenCalled()
   fireEvent.click(screen.getByRole('button', { name: 'Calculate scenario' }))
-  await screen.findByRole('heading', { name: 'Your scenario, explained' })
+  await screen.findByRole('heading', { name: 'Your scenario stress estimate' })
   expect(api.scenario).toHaveBeenCalledWith(expect.objectContaining({ sleep_hours: 7, reported_strain: null }), 'csrf', 'c1', expect.any(AbortSignal))
   fireEvent.change(screen.getByLabelText(/Sleep duration/), { target: { value: '3' } })
   expect(screen.getByText('7 hours')).toBeInTheDocument()
@@ -134,7 +134,7 @@ it('requires a deliberate draft discard when changing sections', async () => {
   const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
   mount()
   fireEvent.change(screen.getByLabelText(/Sleep duration/), { target: { value: '7' } })
-  fireEvent.click(screen.getByRole('button', { name: 'Timeline' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Stress history' }))
   expect(confirm).toHaveBeenCalled()
   expect(screen.getByLabelText(/Sleep duration/)).toHaveValue('7')
   expect(api.list).not.toHaveBeenCalled()
@@ -142,7 +142,7 @@ it('requires a deliberate draft discard when changing sections', async () => {
 
 it('expires the session instead of showing another account a late response', async () => {
   vi.mocked(api.list).mockRejectedValue(new ApiFailure('Sign in again', 401))
-  mount(); fireEvent.click(screen.getByRole('button', { name: 'Timeline' }))
+  mount(); fireEvent.click(screen.getByRole('button', { name: 'Stress history' }))
   await waitFor(() => expect(onExpired).toHaveBeenCalledTimes(1))
   expect(screen.queryByRole('button', { name: 'Open 2026-09-01' })).not.toBeInTheDocument()
 })

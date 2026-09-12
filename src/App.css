@@ -81,3 +81,20 @@ hr { border: 0; border-top: 1px solid #dce3da; margin: 2rem 0; }
 footer { border-top: 1px solid #dce3da; color: #687a6a; font-size: .78rem; margin-top: 50px; padding: 25px 0; }
 @media (max-width: 760px) { .app-shell { padding: 0 20px; } .workspace { grid-template-columns: 1fr; gap: 8px; } .panel { padding: 22px; } .side-note { padding: 22px 5px 0; } .intro { padding-top: 32px; } .saved-inputs { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 430px) { .form-grid, .scores { grid-template-columns: 1fr; } .topbar { height: 85px; } .brand { font-size: .85rem; } .topbar button { padding: .55rem; } }
+/* Stress estimate leads; the student's own report remains distinct. */
+.intro { padding: 30px 0 12px; max-width: 850px; }
+.intro h1 { font-size: clamp(1.9rem, 4vw, 2.8rem); margin-bottom: .65rem; }
+.scores { grid-template-columns: 1.35fr 1fr; }
+.scores > .stress-score { background: #184b40; border-color: #184b40; color: #fff; }
+.stress-score span, .stress-score small { color: #e0eee5; }
+.stress-score strong { font-size: clamp(2.1rem, 5vw, 3rem); }
+.stress-contributors { margin: 1.8rem 0; }
+.stress-contributors > p { font-size: .85rem; }
+.contributor-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.contributor-grid article { padding: 18px; border: 1px solid #dce5dc; border-top: 3px solid #407461; border-radius: 10px; background: #f7f9f4; }
+.contributor-grid h4 { margin: 0 0 .65rem; }
+.contributor-grid strong { font-size: 1.5rem; }
+.contributor-grid small { font-size: .7rem; font-weight: 400; }
+.contributor-grid p { font-size: .83rem; margin: .75rem 0 0; }
+@media (max-width: 700px) { .contributor-grid { grid-template-columns: 1fr; } }
+@media (max-width: 430px) { .scores { grid-template-columns: 1fr; } }

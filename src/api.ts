@@ -73,10 +73,20 @@ export const api = {
     await http.delete('/data/account', { data: { expected_history_version: version, confirmation: 'DELETE' }, headers: { 'X-CSRF-Token': csrf }, signal })
   },
   async config(signal?: AbortSignal) {
-    return (await http.get<AuthConfig>('/auth/config', { signal })).data
+    const value = (await http.get<AuthConfig>('/auth/config', { signal })).data
+    if (typeof value?.oidc_enabled !== 'boolean' || typeof value?.dev_login_enabled !== 'boolean') {
+      throw new ApiFailure('The sign-in service returned an unexpected response. Please try again later.')
+    }
+    return value
   },
   async me(signal?: AbortSignal) {
-    return (await http.get<CurrentUser>('/me', { signal })).data
+    const value = (await http.get<CurrentUser>('/me', { signal })).data
+    if (typeof value?.id !== 'string' || !value.id || typeof value.csrf_token !== 'string' || !value.csrf_token
+        || typeof value.timezone !== 'string' || !Number.isInteger(value.history_version)
+        || value.history_version < 0 || typeof value.llm_consent !== 'boolean') {
+      throw new ApiFailure('Your session could not be verified. Please reload and try again.')
+    }
+    return value
   },
   async devLogin() {
     return (await http.post<CurrentUser>('/auth/dev-login')).data
