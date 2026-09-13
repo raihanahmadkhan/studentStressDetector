@@ -1,82 +1,50 @@
-# Student Wellbeing
+# Student Stress Detector
 
-Turn everyday routine data into transparent, explainable wellbeing insights.
+Understand your stress, see its contributors, and choose a practical next step.
 
-[![Live Demo](https://img.shields.io/badge/demo-live-1b624f?style=flat-square)](https://stressdetect.netlify.app/)
-[![License: MIT](https://img.shields.io/badge/license-MIT-184b40?style=flat-square)](./LICENSE)
-[![React](https://img.shields.io/badge/React-18-1b624f?style=flat-square)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-strict-184b40?style=flat-square)](https://www.typescriptlang.org/)
+[Try the app](https://stressdetect.netlify.app/) · [Backend](https://github.com/raihanahmadkhan/studentStressDetector-backend)
 
-**Live Demo: [stressdetect.netlify.app](https://stressdetect.netlify.app/)**
+## Features
 
-## Overview
+- Google sign-in and an editable account profile.
+- Seven sliders covering sleep, workload, deadlines, screen time, other commitments, recovery, and reported strain.
+- Explainable fuzzy stress estimates from six routine inputs; reported strain stays separate.
+- Up to three practical suggestions grounded in active calculation rules.
+- Daily history with revisions. Saving again for a date makes the latest submission current.
+- Weekly averages and comparisons when sufficient records exist.
+- What-if scenarios that never modify history.
+- A visual report with charts and a daily-values table, printable as PDF; a complete data backup is also available.
+- History and account deletion. Signing in after account deletion creates a new, empty account.
 
-Student Wellbeing is a full-stack web app that helps students notice patterns in their sleep, workload, and routines over time. Each daily check-in is scored by a fuzzy-logic reasoning engine that produces a routine-based wellbeing index - every input membership and activated rule behind that score is shown to the user, not hidden inside a black box.
+## How it works
 
-The app is explicitly **not** a diagnostic or clinical tool. It's a personal, explainable record of routine and self-reported strain, designed to surface trends a student might otherwise miss.
+React sends same-origin API requests to FastAPI. PostgreSQL stores account data and check-in revisions. The backend combines academic pressure, recovery deficit, and contextual pressure into an explainable fuzzy estimate.
 
-## Key Features
+This is an authored heuristic for reflection, not a clinically validated measurement. Trends describe recorded observations and do not establish causes. There is no chatbot, predictive model, or offline synchronization.
 
-- **Daily check-ins** - guided sliders for sleep, workload, deadlines, screen time, recovery, and self-reported strain
-- **Explainable scoring** - a fuzzy-logic engine computes a wellbeing index with full visibility into the reasoning (input memberships, activated rules, contribution breakdown)
-- **Timeline & revisions** - every edit is kept as an immutable, dated revision instead of silently overwriting history
-- **Personal patterns** - descriptive comparisons between recent and baseline periods, with deviation detection and accessible chart views
-- **What-if explorer** - sandbox hypothetical routines against the same live model without touching saved history
-- **Grounded AI reflections** - optional, consent-gated reflections where an LLM only selects and phrases highlights; every fact and number displayed is backend-verified, with a deterministic fallback when AI is unavailable
-- **Full data ownership** - one-click data export and self-service deletion of history or account
-- **Accessible by default** - keyboard-navigable, labeled controls, and responsive layout throughout
+## Development
 
-## Tech Stack
+Use Node.js 22.12 or newer and run the companion backend on port 8000.
 
-**Frontend** - React 18, TypeScript, Vite, Chart.js, Axios, Vitest + Testing Library
-
-**Backend** - FastAPI (Python), PostgreSQL - see the [backend repository](https://github.com/raihanahmadkhan/studentStressDetector-backend)
-
-**AI** - optional, consent-gated grounded reflections with a verified-template fallback
-
-## Architecture
-
-```mermaid
-flowchart TD
-    U([Student]) --> FE[React + TypeScript SPA]
-
-    subgraph Product["Product flow"]
-        A[Daily check-in] --> B[Fuzzy wellbeing engine]
-        B --> C[Timeline & revisions]
-        B --> D[Personal patterns]
-        B --> E[What-if explorer]
-        C --> F[Grounded AI reflections]
-        D --> F
-    end
-
-    FE --> Product
-    Product <--> API[Backend API]
-    API <--> DB[(PostgreSQL)]
-    API -.optional, consent-gated.-> AI[AI provider]
-```
-
-## Local Setup
-
-Requires Node 20+.
-
-```bash
-npm install
+```sh
+npm ci
 npm run dev
 ```
 
-The app expects a running instance of the companion backend API - see its [repository](https://github.com/raihanahmadkhan/studentStressDetector-backend) for setup instructions.
+The development server proxies /api to the local backend. No frontend credentials are required. Do not commit local environment files.
 
-## Limitations
+```sh
+npm test
+npm run lint
+npm run typecheck
+npm run build
+npm audit
+```
 
-- The wellbeing index is an authored heuristic, not a medically validated or diagnostic measurement
-- Personal pattern insights are descriptive, not predictive or causal
-- Requires an active connection to the backend; there is no offline mode
-- Not a substitute for professional mental health support
+## Stack
 
-## Backend Repository
-
-[studentStressDetector-backend](https://github.com/raihanahmadkhan/studentStressDetector-backend)
+React, TypeScript, Vite, Chart.js, Axios, Vitest, and Testing Library. Netlify hosts the frontend; Render hosts the companion service.
 
 ## License
 
-MIT - see [LICENSE](./LICENSE).
+MIT — see [LICENSE](LICENSE).

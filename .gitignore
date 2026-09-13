@@ -11,6 +11,9 @@ node_modules
 .npm-cache/
 dist
 dist-ssr
+.env
+.env.*
+!.env.example
 *.local
 
 # Editor directories and files

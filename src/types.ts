@@ -88,13 +88,3 @@ export interface ScenarioResult {
   reference: { id: string; revision: number; inputs: Inputs; assessment: CheckIn['assessment'] } | null
   history_version: number
 }
-
-export interface ReflectionSource { kind: 'checkin' | 'weekly'; checkin_id?: string; end_date?: string; expected_history_version: number }
-export interface Reflection {
-  id: string | null; status: 'grounded' | 'fallback'; reason: string | null
-  history_version: number; source_hash: string; prompt_version: string; model_version: string
-  output: { highlights: { evidence_id: string; text: string; reflection: string; source: Record<string, unknown> }[]; limitation: string }
-  evidence: { id: string; text: string; source: Record<string, unknown> }[]
-  context: Record<string, unknown>
-}
-export interface AIStatus { configured: boolean; consent: boolean; provider: string; model: string | null; hourly_limit: number; daily_limit: number; predictions_enabled: false }

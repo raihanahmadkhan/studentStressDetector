@@ -7,13 +7,19 @@ import { FuzzyChart } from './Charts'
 import { fields, localDate, defaultValues } from './checkInFields'
 import { NumericSlider } from './NumericSlider'
 
-export function Result({ value, hypothetical = false }: { value: CheckIn; hypothetical?: boolean }) {
+export function Result({ value, hypothetical = false, focusOnShow = false }: { value: CheckIn; hypothetical?: boolean; focusOnShow?: boolean }) {
   const headingId = useId()
+  const heading = useRef<HTMLHeadingElement>(null)
+  useEffect(() => {
+    if (!focusOnShow) return
+    heading.current?.focus({ preventScroll: true })
+    heading.current?.scrollIntoView?.({ behavior: 'instant', block: 'start' })
+  }, [focusOnShow, value])
   const result = value.assessment
   const fired = result.rules.filter(rule => rule.firing_strength > 0)
   return <section className="panel result" aria-labelledby={headingId}>
     <div className="eyebrow"><Check size={16} aria-hidden="true" /> {hypothetical ? 'Hypothetical scenario · never saved' : `Saved stress check-in · ${value.observation_date}`}</div>
-    <h2 id={headingId}>{hypothetical ? 'Your scenario stress estimate' : 'Your stress estimate, explained'}</h2>
+    <h2 id={headingId} ref={heading} tabIndex={-1} style={{ scrollMarginTop: '1.5rem' }}>{hypothetical ? 'Your scenario stress estimate' : 'Your stress estimate, explained'}</h2>
     <p>{hypothetical ? 'This calculation describes only the scenario values below.' : `This result belongs to revision ${value.revision} of the saved values below. Recorded ${new Date(value.recorded_at).toLocaleString()} in ${value.timezone}${value.retrospective ? ' · retrospective report' : ''}.`}</p>
     <div className="scores">
       <div className="stress-score"><span>Estimated stress</span><strong>{result.status === 'ok' ? `${result.score?.toFixed(1)} / 100` : 'Unavailable'}</strong><small>{result.status === 'ok' ? `${result.category} · routine-based estimate` : 'No numerical stress estimate'}</small></div>
@@ -26,7 +32,7 @@ export function Result({ value, hypothetical = false }: { value: CheckIn; hypoth
     {!hypothetical && result.status === 'ok' && !!value.guidance?.length && <section aria-label="Practical next steps"><h3>What you could do next</h3><p>Choose one step that fits your day. These suggestions reflect the values recorded in this check-in.</p><div className="contributor-grid">{value.guidance.map(item => <article key={item.id}><h4>{item.title}</h4><p>{item.action}</p><details><summary>Why this suggestion?</summary><p>{item.reason}</p><p className="small muted">Supporting rules: {item.rule_ids.join(', ')}</p></details></article>)}</div></section>}
     <dl className="saved-inputs">{fields.map(([name, label, , , , unit]) => <div key={name}><dt>{label}</dt><dd>{value.inputs[name] == null ? 'Not recorded' : `${value.inputs[name]} ${unit}`}</dd></div>)}</dl>
     <details><summary>See the fuzzy rules and calculation</summary>
-      <p>Model {result.model_version}. {result.components?.length ? 'Each component multiplies input memberships, scales symmetric output sets, sums them, and calculates their centroid. The final index blends these component scores using the recorded weights.' : 'Rules combine input memberships with minimum, clip output sets, aggregate with maximum, then calculate their centroid.'}</p>
+      <p>{result.components?.length ? 'Each component multiplies input memberships, scales symmetric output sets, sums them, and calculates their centroid. The final index blends these component scores using the recorded weights.' : 'Rules combine input memberships with minimum, clip output sets, aggregate with maximum, then calculate their centroid.'}</p>
       <p>A firing strength is a membership degree, not a confidence probability or an additive contribution.</p>
       {result.status === 'ok' && <>{result.components?.length ? <><p>The final index is a weighted sum of the three unrounded component centroids: {result.raw_score?.toFixed(4)}, rounded to {result.score?.toFixed(1)}. Higher recovery deficit means less recovery.</p>{result.components.map(component => <section key={component.id}><h3>{component.label}</h3><p>Component centroid: {component.raw_centroid.toFixed(4)} · weight: {component.weight}.</p><FuzzyChart assessment={component} /></section>)}</> : <><FuzzyChart assessment={result} /><p>The centroid is {result.raw_centroid?.toFixed(4)}, rounded to {result.score?.toFixed(1)}.</p></>}<p> Index bands use the rounded score: below 25 very low, below 45 low, below 65 moderate, below 85 high, otherwise very high.</p><div className="table-scroll"><table><caption>Fuzzification: membership of each observed input</caption><thead><tr><th>Input</th><th>Memberships (0-1)</th></tr></thead><tbody>{Object.entries(result.memberships).map(([name, terms]) => <tr key={name}><td>{name.replaceAll('_', ' ')}</td><td>{Object.entries(terms).map(([term, degree]) => `${term}: ${degree.toFixed(3)}`).join('; ')}</td></tr>)}</tbody></table></div></>}
       {fired.length > 0 ? <div className="table-scroll"><table><caption>Actual activated rules ({fired.length} of {result.rules.length})</caption><thead><tr><th>Rule</th><th>Input memberships</th><th>Output term</th><th>Strength</th></tr></thead><tbody>{fired.map(rule => <tr key={rule.id}><td>{rule.id}</td><td>{rule.antecedents.map(term => `${term.variable.replaceAll('_', ' ')}: ${term.term} (${term.degree.toFixed(3)})`).join(' AND ')}</td><td>{rule.consequent.replaceAll('_', ' ')}</td><td>{rule.firing_strength.toFixed(3)}</td></tr>)}</tbody></table></div> : <p>No numerical inference is available for this observation.</p>}
@@ -140,6 +146,6 @@ export function CheckInForm({ user, onExpired, initial, onSaved, onDirty }: { us
       </section>
       <aside className="side-note"><ShieldCheck size={25} aria-hidden="true" /><h2>What shapes your stress estimate?</h2><p>Six routine inputs form three components. The result shows how much each contributes to the estimated stress score.</p><ol><li>Academic pressure: workload and deadlines.</li><li>Recovery deficit: sleep and relaxation.</li><li>Contextual pressure: screen time and other commitments.</li></ol><p className="muted">Your reported strain is shown alongside the estimate. A rule-based score cannot capture everything you feel.</p></aside>
     </div>
-    {result && <><Result value={result} /></>}
+    {result && <><Result value={result} focusOnShow /></>}
   </>
 }

@@ -41,7 +41,10 @@ describe('explicit slider observations', () => {
       inputs: { sleep_hours: 6, academic_load: 5, deadline_pressure: 5, screen_hours: 8, extracurricular_load: 5, recovery: 5, reported_strain: null },
       assessment: { status: 'ok', raw_centroid: null, raw_score: 50, score: 50, category: 'Moderate', model_version: 'fuzzy-3.0.0', spec_hash: 'verified', memberships: {}, rules: [], aggregate: { universe: [], membership: [] }, reason: null, limitations: [],
         components: [{ id: 'academic_pressure', label: 'Academic pressure', raw_centroid: 50, weight: .45, contribution: 22.5, explanation: 'Trusted academic explanation from backend.', rules: [], aggregate: { universe: [], membership: [] } }] } }
-    render(<Result value={value} />)
+    const { rerender } = render(<Result value={value} />)
+    expect(screen.getByRole('heading', { name: 'Your stress estimate, explained' })).not.toHaveFocus()
+    rerender(<Result value={value} focusOnShow />)
+    expect(screen.getByRole('heading', { name: 'Your stress estimate, explained' })).toHaveFocus()
     expect(screen.getByText('Trusted academic explanation from backend.')).toBeInTheDocument()
     expect(screen.getByText(/weighted sum of the three unrounded/)).toBeInTheDocument()
   })
