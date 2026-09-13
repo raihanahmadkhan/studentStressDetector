@@ -85,12 +85,47 @@ it('checks history version when loading another page', async () => {
   expect(screen.getAllByRole('button', { name: 'Open 2026-09-01' })).toHaveLength(1)
 })
 
+it('renders backend guidance with its explanation on a saved result', async () => {
+  vi.mocked(api.get).mockResolvedValue({ ...saved, guidance: [{ id: 'deadline_pressure', policy_version: 'guidance-1.0.0', component_id: 'academic_pressure', rule_ids: ['academic_pressure:13'], title: 'Prioritize one deadline', action: 'Choose the nearest deadline and its next small task.', reason: 'Your recorded deadline pressure appeared in an active academic pressure rule.' }] })
+  mount(); await openObservation()
+  expect(screen.getByRole('heading', { name: 'What you could do next' })).toBeInTheDocument()
+  expect(screen.getByText('Choose the nearest deadline and its next small task.')).toBeInTheDocument()
+  expect(screen.getByText('Supporting rules: academic_pressure:13')).toBeInTheDocument()
+})
+
 it('shows missing pattern data explicitly with a table equivalent', async () => {
   mount(); fireEvent.click(screen.getByRole('button', { name: 'Stress trends' }))
-  await screen.findByText('Not enough data')
+  await screen.findByText('Your weekly comparison is still building')
   expect(screen.getByText('Missing', { exact: true })).toBeInTheDocument()
   expect(screen.getByText('Not enough reports')).toBeInTheDocument()
   expect(api.save).not.toHaveBeenCalled()
+})
+
+it('shows recorded weekly averages before comparisons are ready', async () => {
+  vi.mocked(api.patterns).mockResolvedValue({ ...emptyPatterns,
+    series: [
+      { ...emptyPatterns.series[0], inputs: { ...saved.inputs, sleep_hours: 0 } },
+      { ...emptyPatterns.series[0], date: '2026-09-02', inputs: { ...saved.inputs, sleep_hours: 8 } },
+      { ...emptyPatterns.series[0], date: '2026-09-03', inputs: null },
+      { ...emptyPatterns.series[0], date: '2026-08-31', inputs: { ...saved.inputs, sleep_hours: 12 } },
+    ] })
+  mount(); fireEvent.click(screen.getByRole('button', { name: 'Stress trends' }))
+  await screen.findByText('Your week at a glance')
+  expect(screen.getByText('4.0 hours')).toBeInTheDocument()
+  expect(screen.getByText('From 2 check-ins')).toBeInTheDocument()
+  expect(screen.queryByText('Not enough data')).not.toBeInTheDocument()
+  expect(screen.queryByRole('region', { name: 'Weekly comparisons' })).not.toBeInTheDocument()
+})
+
+it('shows comparisons only for eligible measures alongside the shared notice', async () => {
+  vi.mocked(api.patterns).mockResolvedValue({ ...emptyPatterns, metrics: [
+    { ...emptyPatterns.metrics[0], status: 'available', difference: -1, recent_median: 6, baseline_median: 7, recent_count: 7, baseline_count: 10 },
+    { ...emptyPatterns.metrics[0], id: 'screen', metric: 'screen_hours' },
+  ] })
+  mount(); fireEvent.click(screen.getByRole('button', { name: 'Stress trends' }))
+  await screen.findByText('More comparisons are still building')
+  expect(screen.getByText('1.0 hours lower')).toBeInTheDocument()
+  expect(screen.getAllByText('How this comparison works')).toHaveLength(1)
 })
 
 it('discards a superseded patterns response', async () => {
@@ -99,7 +134,7 @@ it('discards a superseded patterns response', async () => {
   mount(); fireEvent.click(screen.getByRole('button', { name: 'Stress trends' }))
   await waitFor(() => expect(api.patterns).toHaveBeenCalledTimes(1))
   fireEvent.change(screen.getByLabelText('Period ending'), { target: { value: '2026-09-07' } })
-  await screen.findByText('Not enough data')
+  await screen.findByText('Your weekly comparison is still building')
   await act(async () => resolve({ ...emptyPatterns, cooccurrence: 'STALE RESULT' }))
   expect(screen.queryByText('STALE RESULT')).not.toBeInTheDocument()
 })

@@ -37,6 +37,7 @@ export interface Rule {
 }
 
 export interface CheckIn {
+  guidance?: { id: string; policy_version: string; component_id: string; rule_ids: string[]; title: string; action: string; reason: string }[]
   id: string
   observation_date: string
   timezone: string

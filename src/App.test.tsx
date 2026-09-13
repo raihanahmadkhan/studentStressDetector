@@ -190,8 +190,31 @@ describe('intentional observations', () => {
   it('shows session dependency failure without offering fake local scoring', async () => {
     vi.mocked(api.me).mockRejectedValue(new ApiFailure('Database unavailable', 503))
     render(<App />)
-    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Database unavailable'))
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('We could not check your session.'))
     expect(screen.queryByRole('button', { name: 'Save check-in' })).not.toBeInTheDocument()
     expect(api.save).not.toHaveBeenCalled()
   })
+})
+
+ it('keeps the landing page visible during an outage and recovers with retry', async () => {
+  vi.mocked(api.config).mockRejectedValueOnce(new ApiFailure('Unavailable', 503))
+    .mockResolvedValue({ oidc_enabled: true, dev_login_enabled: false })
+  vi.mocked(api.me).mockRejectedValueOnce(new ApiFailure('Unavailable', 503))
+    .mockRejectedValue(new ApiFailure('Sign in', 401))
+  render(<App />)
+  expect(await screen.findByRole('alert')).toHaveTextContent('We could not connect to sign-in')
+  expect(screen.getByRole('heading', { name: /It adds up/ })).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Retry connection' }))
+  expect(await screen.findByRole('link', { name: /Continue with Google/ })).toBeInTheDocument()
+  expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  expect(api.devLogin).not.toHaveBeenCalled()
+})
+
+it('offers Google sign-in again after cancellation without starting login automatically', async () => {
+  vi.mocked(api.me).mockRejectedValue(new ApiFailure('Sign in', 401))
+  vi.mocked(api.config).mockResolvedValue({ oidc_enabled: true, dev_login_enabled: false })
+  render(<App signInNotice="Google sign-in was cancelled. You can try again whenever you’re ready." />)
+  expect(await screen.findByRole('link', { name: /Continue with Google/ })).toHaveAttribute('href', '/api/auth/login')
+  expect(screen.getByRole('status')).toHaveTextContent('Google sign-in was cancelled.')
+  expect(api.devLogin).not.toHaveBeenCalled()
 })

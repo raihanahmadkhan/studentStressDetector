@@ -8,7 +8,7 @@ export function FuzzyChart({ assessment }: { assessment: Pick<CheckIn['assessmen
   if (!assessment.aggregate.universe.length) return null
   return <figure><div className="chart"><Line aria-label="Aggregated fuzzy output membership; centroid stated below" role="img"
     data={{ datasets: [{ label: 'Aggregated membership', data: assessment.aggregate.universe.map((x, i) => ({ x, y: assessment.aggregate.membership[i] })), borderColor: '#236d58', backgroundColor: '#236d5830', fill: true, pointRadius: 0 }] }}
-    options={{ animation: false, responsive: true, maintainAspectRatio: false, scales: { x: { type: 'linear', min: 0, max: 100, title: { display: true, text: 'Fuzzy output (0–100)' } }, y: { min: 0, max: 1, title: { display: true, text: 'Membership degree' } } } }} /></div><figcaption>{assessment.id ? 'Sum of the product-scaled output sets; component centroid reported above.' : 'Maximum of the clipped output sets; the numerical centroid is reported below.'}</figcaption></figure>
+    options={{ animation: false, responsive: true, maintainAspectRatio: false, scales: { x: { type: 'linear', min: 0, max: 100, title: { display: true, text: 'Fuzzy output (0-100)' } }, y: { min: 0, max: 1, title: { display: true, text: 'Membership degree' } } } }} /></div><figcaption>{assessment.id ? 'Sum of the product-scaled output sets; component centroid reported above.' : 'Maximum of the clipped output sets; the numerical centroid is reported below.'}</figcaption></figure>
 }
 
 export function PatternChart({ patterns, metric, label }: { patterns: Patterns; metric: keyof Inputs; label: string }) {
