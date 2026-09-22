@@ -10,6 +10,7 @@ export default function App({ signInNotice = '' }: { signInNotice?: string }) {
   const [user, setUser] = useState<CurrentUser | null>(null)
   const [config, setConfig] = useState<AuthConfig | null>(null)
   const [loading, setLoading] = useState(true)
+  const [slowConnection, setSlowConnection] = useState(false)
   const [error, setError] = useState('')
   const [connectionError, setConnectionError] = useState('')
   const [attempt, setAttempt] = useState(0)
@@ -18,13 +19,16 @@ export default function App({ signInNotice = '' }: { signInNotice?: string }) {
 
   useEffect(() => {
     setLoading(true)
+    setSlowConnection(false)
     setConnectionError('')
     let active = true
     const controller = new AbortController()
-    Promise.allSettled([api.config(controller.signal), api.me(controller.signal)]).then(([configuration, session]) => {
+    const slowTimer = setTimeout(() => { if (active) setSlowConnection(true) }, 4000)
+    Promise.allSettled([api.config(controller.signal, true), api.me(controller.signal, true)]).then(([configuration, session]) => {
       if (!active) return
+      clearTimeout(slowTimer)
       if (configuration.status === 'fulfilled') setConfig(configuration.value)
-      else setConnectionError('We could not connect to sign-in. Please retry.')
+      else if (session.status !== 'fulfilled') setConnectionError('We could not connect to sign-in. Please retry.')
       if (session.status === 'fulfilled') setUser(session.value)
       else {
         setUser(null)
@@ -32,7 +36,7 @@ export default function App({ signInNotice = '' }: { signInNotice?: string }) {
       }
       setLoading(false)
     })
-    return () => { active = false; controller.abort() }
+    return () => { active = false; clearTimeout(slowTimer); controller.abort() }
   }, [attempt])
 
   async function devLogin() {
@@ -80,7 +84,7 @@ export default function App({ signInNotice = '' }: { signInNotice?: string }) {
       {!user && signInNotice && <p className="notice" role="status">{signInNotice}</p>}
       {connectionError && <div className="error" role="alert"><p>{connectionError}</p><button onClick={() => setAttempt(value => value + 1)} disabled={loading}>Retry connection</button></div>}
       {error && <p className="error" role="alert">{error}</p>}
-      {!loading && user ? <Product key={user.id} user={user} onUser={setUser} onLogout={logout} authPending={authPending} onExpired={() => { setUser(null); setError('Your session expired. Sign in again to continue. Unsaved account data has been cleared.') }} /> : <Landing signIn={<>{loading ? <p role="status">Checking your session…</p> : <>{config?.oidc_enabled && <a className="primary button-link" href="/api/auth/login">Continue with Google <ArrowRight size={17} aria-hidden="true" /></a>}{devLoginEnabled && <><button className="primary" onClick={devLogin} disabled={authPending}>{authPending ? 'Signing in…' : 'Use local development account'}</button><p className="muted small">Local development only. This sign-in is disabled in production.</p></>}{config && !config.oidc_enabled && !devLoginEnabled && <p className="notice">Sign-in is temporarily unavailable. Please try again later.</p>}</>}</>} />}
+      {!loading && user ? <Product key={user.id} user={user} onUser={setUser} onLogout={logout} authPending={authPending} onExpired={() => { setUser(null); setError('Your session expired. Sign in again to continue. Unsaved account data has been cleared.') }} /> : <Landing signIn={<>{loading ? <p role="status">{slowConnection ? 'Connecting securely. This may take a minute; we’ll retry automatically…' : 'Checking your session…'}</p> : <>{config?.oidc_enabled && <a className="primary button-link" href="/api/auth/login">Continue with Google <ArrowRight size={17} aria-hidden="true" /></a>}{devLoginEnabled && <><button className="primary" onClick={devLogin} disabled={authPending}>{authPending ? 'Signing in…' : 'Use local development account'}</button><p className="muted small">Local development only. This sign-in is disabled in production.</p></>}{config && !config.oidc_enabled && !devLoginEnabled && <p className="notice">Sign-in is temporarily unavailable. Please try again later.</p>}</>}</>} />}
     </main><footer>Student Stress Detector provides a rule-based stress estimate, not a clinical diagnosis.</footer>
   </div>
 }

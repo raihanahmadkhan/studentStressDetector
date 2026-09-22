@@ -3,6 +3,42 @@ import type { AuthConfig, CheckIn, CheckInPage, CurrentUser, Submission, Inputs,
 
 const http = axios.create({ baseURL: '/api', timeout: 12000, withCredentials: true })
 
+// Startup can outlast one request while the hosting service wakes up. Only
+// authentication reads opt in; never replay writes or retry an expired session.
+async function authRead<T>(url: string, signal?: AbortSignal, reconnect = false): Promise<T> {
+  const deadline = Date.now() + 90000
+  let delay = 1000
+  for (;;) {
+    signal?.throwIfAborted()
+    try {
+      return (await http.get<T>(url, {
+        signal, timeout: reconnect ? Math.max(1, Math.min(12000, deadline - Date.now())) : 12000,
+      })).data
+    } catch (error) {
+      const status = axios.isAxiosError(error) ? error.response?.status : undefined
+      const transient = axios.isAxiosError(error) && !axios.isCancel(error)
+        && (status === undefined
+          ? ['ERR_NETWORK', 'ECONNABORTED', 'ETIMEDOUT'].includes(error.code ?? '')
+          : [408, 500, 502, 503, 504].includes(status))
+      if (!reconnect || !transient || signal?.aborted || Date.now() + delay >= deadline) throw error
+      await new Promise<void>((resolve, reject) => {
+        const abort = () => {
+          clearTimeout(timer)
+          signal?.removeEventListener('abort', abort)
+          reject(new axios.CanceledError())
+        }
+        const timer = setTimeout(() => {
+          signal?.removeEventListener('abort', abort)
+          resolve()
+        }, delay)
+        signal?.addEventListener('abort', abort, { once: true })
+        if (signal?.aborted) abort()
+      })
+      delay = Math.min(delay * 2, 8000)
+    }
+  }
+}
+
 export class ApiFailure extends Error {
   constructor(message: string, public status?: number, public code?: string) {
     super(message)
@@ -67,15 +103,15 @@ export const api = {
   async deleteAccount(version: number, csrf: string, signal?: AbortSignal) {
     await http.delete('/data/account', { data: { expected_history_version: version, confirmation: 'DELETE' }, headers: { 'X-CSRF-Token': csrf }, signal })
   },
-  async config(signal?: AbortSignal) {
-    const value = (await http.get<AuthConfig>('/auth/config', { signal })).data
+  async config(signal?: AbortSignal, reconnect = false) {
+    const value = await authRead<AuthConfig>('/auth/config', signal, reconnect)
     if (typeof value?.oidc_enabled !== 'boolean' || typeof value?.dev_login_enabled !== 'boolean') {
       throw new ApiFailure('The sign-in service returned an unexpected response. Please try again later.')
     }
     return value
   },
-  async me(signal?: AbortSignal) {
-    const value = (await http.get<CurrentUser>('/me', { signal })).data
+  async me(signal?: AbortSignal, reconnect = false) {
+    const value = await authRead<CurrentUser>('/me', signal, reconnect)
     if (typeof value?.id !== 'string' || !value.id || typeof value.csrf_token !== 'string' || !value.csrf_token
         || typeof value.timezone !== 'string' || !Number.isInteger(value.history_version)
         || value.history_version < 0 || typeof value.llm_consent !== 'boolean') {
